@@ -9,6 +9,7 @@ package com.anthli.blockchainapi
 import com.anthli.blockchainapi.charts.ChartType
 import com.anthli.blockchainapi.charts.TimeSpan
 import com.anthli.blockchainapi.charts.TimeUnit
+import com.anthli.blockchainapi.exchangerates.Currency
 import com.github.kittinunf.fuel.core.FuelError
 import kotlinx.serialization.ImplicitReflectionSerializer
 import org.junit.jupiter.api.Assertions
@@ -119,5 +120,26 @@ class BlockchainApiTest {
     Assertions.assertThrows(FuelError::class.java) {
       blockchainApi.getPools(TimeSpan(2, TimeUnit.WEEKS))
     }
+  }
+
+  @Test
+  fun testGetTicker() {
+    val tickerMap = blockchainApi.getTickerMap()
+    Currency.values().forEach { currency ->
+      val currencyData = tickerMap[currency]
+      Assertions.assertNotNull(currencyData)
+      Assertions.assertNotNull(currencyData!!.buy)
+      Assertions.assertNotNull(currencyData.sell)
+      Assertions.assertNotNull(currencyData.last)
+      Assertions.assertNotNull(currencyData.delayedMarketPrice15m)
+      Assertions.assertNotNull(currencyData.symbol)
+    }
+  }
+
+  @Test
+  fun testConvertToBtc() {
+    val convertedValue = blockchainApi.convertToBtc(Currency.USD, 10000.0)
+    Assertions.assertNotNull(convertedValue)
+    Assertions.assertTrue(convertedValue > 0.0)
   }
 }

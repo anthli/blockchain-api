@@ -9,6 +9,8 @@ package com.anthli.blockchainapi
 import com.anthli.blockchainapi.charts.Chart
 import com.anthli.blockchainapi.charts.ChartType
 import com.anthli.blockchainapi.charts.TimeSpan
+import com.anthli.blockchainapi.exchangerates.Currency
+import com.anthli.blockchainapi.exchangerates.CurrencyData
 import com.anthli.blockchainapi.statistics.Statistics
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.result.Result
@@ -23,17 +25,21 @@ import java.time.format.DateTimeFormatter
 
 const val BASE_URL = "https://api.blockchain.info"
 
-const val CHARTS_ENDPOINT = "charts"
-const val STATS_ENDPOINT = "stats"
-const val POOLS_ENDPOINT = "pools"
-
 const val DATETIME_FORMAT = "yyyy-MM-dd"
 const val TIMEZONE = "UTC"
 
-const val TIME_SPAN = "timespan"
+const val CHARTS_ENDPOINT = "charts"
+const val POOLS_ENDPOINT = "pools"
+const val STATS_ENDPOINT = "stats"
+const val TICKER_ENDPOINT = "ticker"
+const val TO_BTC_ENDPOINT = "tobtc"
+
+const val CURRENCY = "currency"
 const val ROLLING_AVERAGE = "rollingAverage"
-const val START = "start"
 const val SAMPLED = "sampled"
+const val START = "start"
+const val TIME_SPAN = "timespan"
+const val VALUE = "value"
 
 class BlockchainApi {
   private val json = Json(JsonConfiguration.Stable.copy(isLenient = true))
@@ -86,7 +92,7 @@ class BlockchainApi {
       params.add(SAMPLED to sampled.toString())
     }
 
-    val url = listOf(BASE_URL, CHARTS_ENDPOINT, chartType.chartName).joinToString("/")
+    val url = createUrl(BASE_URL, CHARTS_ENDPOINT, chartType.chartName)
     val chart = getData(Chart.serializer(), url, params)
     return chart
   }
@@ -99,7 +105,7 @@ class BlockchainApi {
    *   stats.
    */
   fun getStatistics(): Statistics {
-    val url = listOf(BASE_URL, STATS_ENDPOINT).joinToString("/")
+    val url = createUrl(BASE_URL, STATS_ENDPOINT)
     val statistics = getData(Statistics.serializer(), url)
     return statistics
   }
@@ -119,9 +125,50 @@ class BlockchainApi {
       params.add(TIME_SPAN to timeSpan.toString())
     }
 
-    val url = listOf(BASE_URL, POOLS_ENDPOINT).joinToString("/")
+    val url = createUrl(BASE_URL, POOLS_ENDPOINT)
     val pool = getData(MapSerializer(String.serializer(), Int.serializer()), url, params)
     return pool
+  }
+
+  /**
+   * Retrieves Blockchain's exchange rate information.
+   *
+   * @return
+   *   A mapping of [Currency] to their [CurrencyData] objects.
+   */
+  fun getTickerMap(): Map<Currency, CurrencyData> {
+    val url = createUrl(BASE_URL, TICKER_ENDPOINT)
+    val currencyMap = getData(MapSerializer(Currency.serializer(), CurrencyData.serializer()), url)
+    return currencyMap
+  }
+
+  /**
+   * Converts the value of the currency to BTC.
+   *
+   * @param currency
+   *   The currency to convert from.
+   * @param value
+   *   The value of the currency to convert.
+   * @return The value of the currency converted to BTC.
+   */
+  fun convertToBtc(currency: Currency, value: Double): Double {
+    val url = createUrl(BASE_URL, TO_BTC_ENDPOINT)
+    val params = mutableListOf<Pair<String, String>>()
+    params.add(CURRENCY to currency.name)
+    params.add(VALUE to value.toString())
+
+    val convertedValue = getData(Double.serializer(), url, params)
+    return convertedValue
+  }
+
+  /**
+   * Concatenates each URL fragment into a single URL.
+   *
+   * @param urlFragments
+   *   Each fragment of the URL to concatenate.
+   */
+  private fun createUrl(vararg urlFragments: String): String {
+    return urlFragments.joinToString("/")
   }
 
   /**
