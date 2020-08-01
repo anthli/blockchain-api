@@ -28,19 +28,6 @@ const val BASE_URL = "https://api.blockchain.info"
 const val DATETIME_FORMAT = "yyyy-MM-dd"
 const val TIMEZONE = "UTC"
 
-const val CHARTS_ENDPOINT = "charts"
-const val POOLS_ENDPOINT = "pools"
-const val STATS_ENDPOINT = "stats"
-const val TICKER_ENDPOINT = "ticker"
-const val TO_BTC_ENDPOINT = "tobtc"
-
-const val CURRENCY = "currency"
-const val ROLLING_AVERAGE = "rollingAverage"
-const val SAMPLED = "sampled"
-const val START = "start"
-const val TIME_SPAN = "timespan"
-const val VALUE = "value"
-
 class BlockchainApi {
   private val json = Json(JsonConfiguration.Stable.copy(isLenient = true))
 
@@ -73,11 +60,11 @@ class BlockchainApi {
   ): Chart {
     val params = mutableListOf<Pair<String, String>>()
     if (timeSpan != null) {
-      params.add(TIME_SPAN to timeSpan.toString())
+      params.add(Parameters.TIME_SPAN to timeSpan.toString())
     }
 
     if (rollingAverage != null) {
-      params.add(ROLLING_AVERAGE to rollingAverage.toString())
+      params.add(Parameters.ROLLING_AVERAGE to rollingAverage.toString())
     }
 
     if (start != null) {
@@ -85,16 +72,15 @@ class BlockchainApi {
         .ofPattern(DATETIME_FORMAT)
         .withZone(ZoneId.of(TIMEZONE))
         .format(start)
-      params.add(START to startString)
+      params.add(Parameters.START to startString)
     }
 
     if (sampled != null) {
-      params.add(SAMPLED to sampled.toString())
+      params.add(Parameters.SAMPLED to sampled.toString())
     }
 
-    val url = createUrl(BASE_URL, CHARTS_ENDPOINT, chartType.chartName)
-    val chart = getData(Chart.serializer(), url, params)
-    return chart
+    val url = createUrl(BASE_URL, Endpoints.CHARTS, chartType.chartName)
+    return getData(Chart.serializer(), url, params)
   }
 
   /**
@@ -105,9 +91,8 @@ class BlockchainApi {
    *   stats.
    */
   fun getStatistics(): Statistics {
-    val url = createUrl(BASE_URL, STATS_ENDPOINT)
-    val statistics = getData(Statistics.serializer(), url)
-    return statistics
+    val url = createUrl(BASE_URL, Endpoints.STATS)
+    return getData(Statistics.serializer(), url)
   }
 
   /**
@@ -122,12 +107,11 @@ class BlockchainApi {
   fun getPools(timeSpan: TimeSpan? = null): Map<String, Int> {
     val params = mutableListOf<Pair<String, String>>()
     if (timeSpan != null) {
-      params.add(TIME_SPAN to timeSpan.toString())
+      params.add(Parameters.TIME_SPAN to timeSpan.toString())
     }
 
-    val url = createUrl(BASE_URL, POOLS_ENDPOINT)
-    val pool = getData(MapSerializer(String.serializer(), Int.serializer()), url, params)
-    return pool
+    val url = createUrl(BASE_URL, Endpoints.POOLS)
+    return getData(MapSerializer(String.serializer(), Int.serializer()), url, params)
   }
 
   /**
@@ -137,9 +121,8 @@ class BlockchainApi {
    *   A mapping of [Currency] to their [CurrencyData] objects.
    */
   fun getTickerMap(): Map<Currency, CurrencyData> {
-    val url = createUrl(BASE_URL, TICKER_ENDPOINT)
-    val currencyMap = getData(MapSerializer(Currency.serializer(), CurrencyData.serializer()), url)
-    return currencyMap
+    val url = createUrl(BASE_URL, Endpoints.TICKER)
+    return getData(MapSerializer(Currency.serializer(), CurrencyData.serializer()), url)
   }
 
   /**
@@ -152,13 +135,12 @@ class BlockchainApi {
    * @return The value of the currency converted to BTC.
    */
   fun convertToBtc(currency: Currency, value: Double): Double {
-    val url = createUrl(BASE_URL, TO_BTC_ENDPOINT)
+    val url = createUrl(BASE_URL, Endpoints.TO_BTC)
     val params = mutableListOf<Pair<String, String>>()
-    params.add(CURRENCY to currency.name)
-    params.add(VALUE to value.toString())
+    params.add(Parameters.CURRENCY to currency.name)
+    params.add(Parameters.VALUE to value.toString())
 
-    val convertedValue = getData(Double.serializer(), url, params)
-    return convertedValue
+    return getData(Double.serializer(), url, params)
   }
 
   /**
